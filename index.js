@@ -12,19 +12,12 @@ app.get("/", (req, res) => {
 
 app.post("/build-preview", (req, res) => {
   const { projectId } = req.body;
+  if (!projectId) return res.status(400).json({ error: "projectId is required" });
 
-  if (!projectId) {
-    return res.status(400).json({ error: "projectId is required" });
-  }
-
-  res.json({
-    previewUrl: `https://${projectId}.nuvrahq.com`
-  });
+  res.json({ previewUrl: `https://${projectId}.nuvrahq.com` });
 });
 
-// ✅ This MUST be 3000 to match your Railway Networking setting
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
