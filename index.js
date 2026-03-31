@@ -22,7 +22,7 @@ app.post("/build-preview", (req, res) => {
   });
 });
 
-// ✅ FIXED: Match Railway's Port 3000
+// ✅ This MUST be 3000 to match your Railway Networking setting
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
