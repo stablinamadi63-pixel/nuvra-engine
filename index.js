@@ -13,14 +13,19 @@ app.get("/", (req, res) => {
 app.post("/build-preview", (req, res) => {
   const { projectId } = req.body;
 
+  // Small safety improvement
+  if (!projectId) {
+    return res.status(400).json({ error: "projectId is required" });
+  }
+
   res.json({
     previewUrl: `https://${projectId}.nuvrahq.com`
   });
 });
 
-// ✅ Railway-safe port
+// ✅ Railway-safe: port + host
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
