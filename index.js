@@ -3,41 +3,34 @@ const cors = require("cors");
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Health check
 app.get("/", (req, res) => {
   res.send("Nuvra backend is running 🚀");
 });
 
-// Build endpoint
 app.post("/build", (req, res) => {
   const { prompt, userId } = req.body;
 
   if (!prompt) {
-    return res.status(400).json({
-      error: "Prompt is required",
-    });
+    return res.status(400).json({ error: "Prompt is required" });
   }
-
-  const appData = {
-    id: Date.now(),
-    prompt,
-    owner: userId || "unknown",
-    status: "built",
-  };
 
   res.json({
     success: true,
-    app: appData,
+    app: {
+      id: Date.now(),
+      prompt,
+      owner: userId || "unknown",
+      status: "built",
+    },
   });
 });
 
-// ✅ FINAL FIX (IMPORTANT)
-const PORT = process.env.PORT;
+// ✅ safest version for Railway
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("Server running on port " + PORT);
 });
