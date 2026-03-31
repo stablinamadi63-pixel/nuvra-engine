@@ -1,5 +1,5 @@
-const express = require("express");
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
 
 const app = express();
 
@@ -10,25 +10,15 @@ app.get("/", (req, res) => {
   res.send("Nuvra backend is running 🚀");
 });
 
-app.post("/build", (req, res) => {
-  const { prompt, userId } = req.body;
-
-  if (!prompt) {
-    return res.status(400).json({ error: "Prompt is required" });
-  }
+app.post("/build-preview", (req, res) => {
+  const { projectId } = req.body;
 
   res.json({
-    success: true,
-    app: {
-      id: Date.now(),
-      prompt,
-      owner: userId || "unknown",
-      status: "built",
-    },
+    previewUrl: `https://${projectId}.nuvrahq.com`
   });
 });
 
-// ✅ safest version for Railway
+// ✅ THIS IS THE FIX
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
