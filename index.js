@@ -126,10 +126,6 @@ async function deployToVercel(projectId, prompt) {
       <h1>${projectId}</h1>
       <p>Your SaaS dashboard is now live!</p>
       <p><strong>Prompt:</strong> ${prompt}</p>
-      <p>Dark mode • Real-time updates • Clean sidebar ✅</p>
-      <p style="margin-top: 30px; font-size: 13px; color: #22c55e;">
-        Built instantly by Nuvra
-      </p>
     </div>
   </div>
 </body>
@@ -171,7 +167,7 @@ async function deployToVercel(projectId, prompt) {
 }
 
 /**
- * 🧪 PREVIEW BUILD
+ * 🧪 PREVIEW BUILD (kept for compatibility)
  */
 app.post("/build-preview", async (req, res) => {
   const { projectId, prompt } = req.body;
@@ -197,7 +193,7 @@ app.post("/build-preview", async (req, res) => {
 });
 
 /**
- * 🚀 FULL BUILD + STORE PROJECT
+ * 🚀 FULL BUILD + STORE PROJECT + GENERATE CODE (V3 🔥)
  */
 app.post("/build", async (req, res) => {
   const { projectId, prompt } = req.body;
@@ -222,10 +218,42 @@ app.post("/build", async (req, res) => {
 
     projects.push(project);
 
+    /**
+     * 🔥 V3 — GENERATE RUNTIME CODE
+     */
+    const files = [
+      {
+        name: "App.jsx",
+        content: `
+export default function App() {
+  return (
+    <div style={{ padding: 40, fontFamily: "sans-serif" }}>
+      <h1>${projectId}</h1>
+      <p>${prompt}</p>
+      <button style={{
+        padding: "10px 20px",
+        background: "#22c55e",
+        border: "none",
+        borderRadius: 8,
+        color: "#000",
+        fontWeight: "bold",
+        cursor: "pointer"
+      }}>
+        Click Me 🚀
+      </button>
+    </div>
+  );
+}
+        `
+      }
+    ];
+
     res.json({
       success: true,
       project,
+      files, // 🔥 CRITICAL FOR RUNTIME
     });
+
   } catch (err) {
     res.status(500).json({
       error: "Build failed",
