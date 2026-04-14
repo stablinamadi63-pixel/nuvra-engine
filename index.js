@@ -1,16 +1,30 @@
 const express = require("express");
 const cors = require("cors");
 
+// ✅ Ensure fetch works safely on Node 18+
+const fetch = global.fetch;
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+/**
+ * 🧠 Temporary in-memory database
+ * (Later → replace with real DB)
+ */
+const projects = [];
+
+/**
+ * 🟢 HEALTH CHECK
+ */
 app.get("/", (req, res) => {
   res.send("Nuvra backend is running 🚀");
 });
 
-// ✅ REAL VERCEL DEPLOYMENT
+/**
+ * 🚀 REAL VERCEL DEPLOYMENT FUNCTION
+ */
 async function deployToVercel(projectId, prompt) {
   const html = `
 <!DOCTYPE html>
@@ -101,9 +115,17 @@ async function deployToVercel(projectId, prompt) {
   });
 
   const data = await res.json();
+
+  if (!data.url) {
+    throw new Error("Vercel deployment failed");
+  }
+
   return `https://${data.url}`;
 }
 
+/**
+ * 🧪 EXISTING ENDPOINT (UNCHANGED)
+ */
 app.post("/build-preview", async (req, res) => {
   const { projectId, prompt } = req.body;
 
@@ -112,15 +134,80 @@ app.post("/build-preview", async (req, res) => {
   }
 
   try {
-    const previewUrl = await deployToVercel(projectId, prompt || "SaaS Dashboard");
+    const previewUrl = await deployToVercel(
+      projectId,
+      prompt || "SaaS Dashboard"
+    );
+
     res.json({ previewUrl });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Deployment failed", details: err.message });
+    res.status(500).json({
+      error: "Deployment failed",
+      details: err.message,
+    });
   }
 });
 
-// Railway-safe port
+/**
+ * 🚀 NEW: FULL BUILD + STORE PROJECT
+ */
+app.post("/build", async (req, res) => {
+  const { projectId, prompt } = req.body;
+
+  if (!projectId) {
+    return res.status(400).json({ error: "projectId required" });
+  }
+
+  try {
+    const previewUrl = await deployToVercel(
+      projectId,
+      prompt || "Generated App"
+    );
+
+    const project = {
+      id: projectId,
+      prompt,
+      url: previewUrl,
+      createdAt: new Date(),
+    };
+
+    projects.push(project);
+
+    res.json({
+      success: true,
+      project,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Build failed",
+      details: err.message,
+    });
+  }
+});
+
+/**
+ * 📊 GET ALL PROJECTS
+ */
+app.get("/projects", (req, res) => {
+  res.json(projects);
+});
+
+/**
+ * 🤖 BASIC AI ENDPOINT (UPGRADE LATER)
+ */
+app.post("/ai", (req, res) => {
+  const { prompt } = req.body;
+
+  res.json({
+    result: `AI received: ${prompt}`,
+  });
+});
+
+/**
+ * 🚆 RAILWAY PORT CONFIG
+ */
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, "0.0.0.0", () => {
