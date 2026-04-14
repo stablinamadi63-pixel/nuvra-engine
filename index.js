@@ -1,17 +1,40 @@
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 
 // ✅ Ensure fetch works safely on Node 18+
 const fetch = global.fetch;
 
 const app = express();
 
+/**
+ * 🛡️ RATE LIMITING (ANTI-SPAM)
+ */
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // max 60 requests per minute per IP
+  message: { error: "Too many requests, slow down." },
+});
+
+app.use(limiter);
+
+/**
+ * 🌐 MIDDLEWARES
+ */
 app.use(cors());
 app.use(express.json());
 
 /**
+ * 📊 BASIC LOGGER
+ */
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
+/**
  * 🧠 Temporary in-memory database
- * (Later → replace with real DB)
+ * (Structured for easy DB upgrade later)
  */
 const projects = [];
 
@@ -21,6 +44,21 @@ const projects = [];
 app.get("/", (req, res) => {
   res.send("Nuvra backend is running 🚀");
 });
+
+/**
+ * 🧪 INPUT VALIDATION
+ */
+function validateBuildInput(projectId) {
+  if (!projectId || typeof projectId !== "string") {
+    return "Invalid projectId";
+  }
+
+  if (projectId.length < 3) {
+    return "projectId too short";
+  }
+
+  return null;
+}
 
 /**
  * 🚀 REAL VERCEL DEPLOYMENT FUNCTION
@@ -97,30 +135,39 @@ async function deployToVercel(projectId, prompt) {
 </body>
 </html>`;
 
-  const res = await fetch("https://api.vercel.com/v13/deployments", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      name: projectId,
-      files: [
-        {
-          file: "index.html",
-          data: html,
-        },
-      ],
-    }),
-  });
+  try {
+    const res = await fetch("https://api.vercel.com/v13/deployments", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: projectId,
+        files: [
+          {
+            file: "index.html",
+            data: html,
+          },
+        ],
+      }),
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (!data.url) {
-    throw new Error("Vercel deployment failed");
+    if (!res.ok) {
+      throw new Error(data.error?.message || "Vercel API error");
+    }
+
+    if (!data.url) {
+      throw new Error("Vercel deployment failed");
+    }
+
+    return `https://${data.url}`;
+  } catch (err) {
+    console.error("❌ Vercel Deploy Error:", err.message);
+    throw err;
   }
-
-  return `https://${data.url}`;
 }
 
 /**
@@ -129,8 +176,9 @@ async function deployToVercel(projectId, prompt) {
 app.post("/build-preview", async (req, res) => {
   const { projectId, prompt } = req.body;
 
-  if (!projectId) {
-    return res.status(400).json({ error: "projectId is required" });
+  const error = validateBuildInput(projectId);
+  if (error) {
+    return res.status(400).json({ error });
   }
 
   try {
@@ -141,7 +189,6 @@ app.post("/build-preview", async (req, res) => {
 
     res.json({ previewUrl });
   } catch (err) {
-    console.error(err);
     res.status(500).json({
       error: "Deployment failed",
       details: err.message,
@@ -150,13 +197,14 @@ app.post("/build-preview", async (req, res) => {
 });
 
 /**
- * 🚀 NEW: FULL BUILD + STORE PROJECT
+ * 🚀 FULL BUILD + STORE PROJECT
  */
 app.post("/build", async (req, res) => {
   const { projectId, prompt } = req.body;
 
-  if (!projectId) {
-    return res.status(400).json({ error: "projectId required" });
+  const error = validateBuildInput(projectId);
+  if (error) {
+    return res.status(400).json({ error });
   }
 
   try {
@@ -179,7 +227,6 @@ app.post("/build", async (req, res) => {
       project,
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({
       error: "Build failed",
       details: err.message,
@@ -195,10 +242,14 @@ app.get("/projects", (req, res) => {
 });
 
 /**
- * 🤖 BASIC AI ENDPOINT (UPGRADE LATER)
+ * 🤖 BASIC AI ENDPOINT
  */
 app.post("/ai", (req, res) => {
   const { prompt } = req.body;
+
+  if (!prompt) {
+    return res.status(400).json({ error: "Prompt required" });
+  }
 
   res.json({
     result: `AI received: ${prompt}`,
@@ -211,5 +262,5 @@ app.post("/ai", (req, res) => {
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Nuvra Engine running on port ${PORT}`);
 });
