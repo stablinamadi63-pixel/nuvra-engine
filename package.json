@@ -1,13 +1,24 @@
 {
   "name": "nuvra-engine",
   "version": "1.0.0",
+  "description": "Nuvra Cloud Engine - AI app builder backend",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "node index.js"
   },
   "engines": {
     "node": "18.x"
   },
+  "keywords": [
+    "nuvra",
+    "ai",
+    "builder",
+    "backend",
+    "saas"
+  ],
+  "author": "Stablin",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.19.2",
     "cors": "^2.8.5",
